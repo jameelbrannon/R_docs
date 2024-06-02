@@ -1,0 +1,30 @@
+---
+title: "Plotly Plot Example"
+author: "jameel"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+## Plotly Plot
+
+
+
+```{r plot, echo=FALSE}
+
+library(plotly)
+
+# Create a sample plot
+plot_ly(
+  x = ~rnorm(100),
+  y = ~rnorm(100),
+  type = 'scatter',
+  mode = 'markers'
+)
+
+
+```
+

@@ -1,0 +1,139 @@
+---
+title: "Weight Lifting Exercising Prediction"
+author: "jameel"
+date: "2024-05-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This project aims to predict the manner in which participants performed barbell lifts using accelerometer data from multiple sensors.
+
+## Data Processing
+
+
+```{r load-data}
+# Load necessary libraries
+library(caret)
+library(randomForest)
+library(dplyr)  # For data manipulation
+
+# Load the data
+train_data <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", na.strings = c("NA", ""))
+test_data <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", na.strings = c("NA", ""))
+```
+
+## Clean the Data
+
+
+```{r clean-data}
+# Remove columns with NA values
+train_data <- train_data[, colSums(is.na(train_data)) == 0]
+test_data <- test_data[, colSums(is.na(test_data)) == 0]
+
+# Remove unnecessary columns
+train_data <- train_data[, -c(1:7)]
+test_data <- test_data[, -c(1:7)]
+
+# Ensure all predictor variables are numeric
+train_data <- train_data %>% mutate_if(is.character, as.factor)
+test_data <- test_data %>% mutate_if(is.character, as.factor)
+
+# Convert factor levels to numeric
+for(i in seq_along(train_data)) {
+  if(is.factor(train_data[[i]])) {
+    train_data[[i]] <- as.numeric(as.factor(train_data[[i]]))
+  }
+}
+
+for(i in seq_along(test_data)) {
+  if(is.factor(test_data[[i]])) {
+    test_data[[i]] <- as.numeric(as.factor(test_data[[i]]))
+  }
+}
+
+# Ensure the target variable 'classe' remains a factor
+train_data$classe <- as.factor(train_data$classe)
+```
+
+## Exploratory Data Analysis
+# Visualize the Data
+
+```{r eda}
+
+library(ggplot2)
+
+# Visualize the Data
+library(ggplot2)
+
+# Example: Plotting the distribution of the 'classe' variable
+ggplot(train_data, aes(x = classe)) +
+  geom_bar() +
+  labs(title = "Distribution of Classe Variable", x = "Classe", y = "Count")
+```
+
+
+## Feature Engineering
+# Feature Selection
+
+```{r feature-selection}
+# Feature selection using correlation matrix
+cor_matrix <- cor(train_data[, -ncol(train_data)]) # excluding the 'classe' column
+highly_correlated <- findCorrelation(cor_matrix, cutoff = 0.75)
+train_data <- train_data[, -highly_correlated]
+```
+
+## Model Building
+
+```{r split-data}
+set.seed(123)
+trainIndex <- createDataPartition(train_data$classe, p = .7, list = FALSE)
+training <- train_data[trainIndex,]
+validation <- train_data[-trainIndex,]
+```
+
+## Train the Model
+
+```{r train-model}
+model <- randomForest(classe ~ ., data = training, importance = TRUE)
+```
+
+
+## Model Evaluation
+# Cross-Validation
+```{r vrossVal}
+control <- trainControl(method = "cv", number = 10)
+rf_model <- train(classe ~ ., data = training, method = "rf", trControl = control)
+```
+
+
+
+# Validate the Model
+```{r crossVal}
+control <- trainControl(method = "cv", number = 10)
+rf_model <- train(classe ~ ., data = training, method = "rf", trControl = control)
+```
+
+
+## Prediction
+```{r predict-test}
+test_predictions <- predict(rf_model, newdata = test_data)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

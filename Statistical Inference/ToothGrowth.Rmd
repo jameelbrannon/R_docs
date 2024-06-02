@@ -1,0 +1,107 @@
+---
+title: "Analysis of ToothGrowth Data"
+author: "jameel"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this report, we analyze the ToothGrowth dataset from the R datasets package. We will perform basic exploratory data analyses, provide a summary of the data, and use confidence intervals and hypothesis tests to compare tooth growth by supplement type (supp) and dose.
+
+
+## Exploratory Data Analysis
+
+
+```{r, echo=FALSE}
+# Load the ToothGrowth data
+data("ToothGrowth")
+
+# Display the structure and first few rows of the data
+str(ToothGrowth)
+head(ToothGrowth)
+
+```
+
+The ToothGrowth dataset contains the following variables:
+
+len: Tooth length
+supp: Supplement type (VC or OJ)
+dose: Dose in milligrams per day
+
+## Comparing Tooth Growth by Supplement and Dose
+We will compare tooth growth by supplement type and dose using t-tests and confidence intervals.
+
+```{r, echo=FALSE}
+# Perform t-test to compare tooth growth by supplement type
+t_test_supp <- t.test(len ~ supp, data = ToothGrowth)
+
+# Display the results
+t_test_supp
+
+
+```
+
+## Compare Tooth Growth by Dose
+
+```{r, echo=FALSE}
+# Convert dose to a factor for comparison
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+
+# Perform ANOVA to compare tooth growth by dose
+anova_result <- aov(len ~ dose, data = ToothGrowth)
+
+# Display the ANOVA results
+summary(anova_result)
+
+# Perform pairwise t-tests with Bonferroni correction
+pairwise_t_test <- pairwise.t.test(ToothGrowth$len, ToothGrowth$dose, p.adjust.method = "bonferroni")
+
+# Display the pairwise t-test results
+pairwise_t_test
+
+```
+
+
+## Results 
+
+# Summary of Tooth Growth by Supplement Type
+The t-test results show that there is a significant difference in tooth growth between the two supplement types (VC and OJ).
+
+# Summary of Tooth Growth by Dose
+
+The ANOVA results indicate that there is a significant difference in tooth growth among different doses. The pairwise t-test results with Bonferroni correction show which specific doses differ significantly from each other.
+
+## Conclusions 
+From our analysis, we conclude:
+
+There is a significant difference in tooth growth between the two supplement types (VC and OJ).
+There is a significant difference in tooth growth among different doses.
+
+# Assumptions 
+The t-tests assume that the tooth length data is normally distributed within each group.
+The ANOVA assumes homogeneity of variances and normality of residuals.
+
+## Appendix 
+
+```{r, echo=FALSE}
+# Display the code used in the analysis
+data("ToothGrowth")
+str(ToothGrowth)
+head(ToothGrowth)
+summary(ToothGrowth)
+t_test_supp <- t.test(len ~ supp, data = ToothGrowth)
+t_test_supp
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+anova_result <- aov(len ~ dose, data = ToothGrowth)
+summary(anova_result)
+pairwise_t_test <- pairwise.t.test(ToothGrowth$len, ToothGrowth$dose, p.adjust.method = "bonferroni")
+pairwise_t_test
+
+
+```
+

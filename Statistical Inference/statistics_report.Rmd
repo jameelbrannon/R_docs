@@ -1,0 +1,116 @@
+---
+title: "Exponential Distribution and the Central Limit Theorem"
+author: "jameel"
+date: "2024-05-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this report, we investigate the properties of the exponential distribution and compare it with the Central Limit Theorem (CLT). Specifically, we will explore the distribution of the averages of 40 exponentials through simulation.
+
+
+## Simulation and Analysis
+
+
+```{r  echo=FALSE}
+# Set the parameters
+lambda <- 0.2
+n <- 40
+num_simulations <- 1000
+
+# Simulate the exponential distribution
+set.seed(123)  # Setting seed for reproducibility
+simulations <- replicate(num_simulations, rexp(n, lambda))
+
+# Calculate the sample means
+sample_means <- colMeans(simulations)
+
+# Theoretical mean and variance
+theoretical_mean <- 1 / lambda
+theoretical_variance <- (1 / lambda)^2 / n
+
+# Sample mean and variance
+sample_mean <- mean(sample_means)
+sample_variance <- var(sample_means)
+
+# Display the results
+cat("Sample Mean:", sample_mean, "\n")
+cat("Theoretical Mean:", theoretical_mean, "\n")
+cat("Sample Variance:", sample_variance, "\n")
+cat("Theoretical Variance:", theoretical_variance, "\n")
+
+```
+
+## Sample Mean
+The sample mean of the distribution of 40 exponentials is r sample_mean, while the theoretical mean is r theoretical_mean. These values are very close, illustrating the Law of Large Numbers.
+
+## Sample Variance 
+
+The sample variance is r sample_variance, which is also close to the theoretical variance of r theoretical_variance.
+
+## Distribution of Sample Means
+The histogram below shows the distribution of the sample means. We also overlay the theoretical normal distribution to illustrate the Central Limit Theorem.
+
+```{r  echo=FALSE}
+hist(sample_means, probability = TRUE, 
+     main = "Distribution of Sample Means of 40 Exponentials",
+     xlab = "Sample Mean", 
+     col = "lightblue", 
+     border = "black")
+lines(density(sample_means), col = "red", lwd = 2)
+x <- seq(min(sample_means), max(sample_means), length.out = 100)
+y <- dnorm(x, mean = theoretical_mean, sd = sqrt(theoretical_variance))
+lines(x, y, col = "blue", lwd = 2, lty = 2)
+
+
+```
+
+
+## Normality Check 
+The QQ-plot below shows that the distribution of the sample means is approximately normal.
+
+`
+```{r  echo=FALSE}
+qqnorm(sample_means, main = "QQ-Plot of Sample Means")
+qqline(sample_means, col = "red")
+
+```
+
+## Conclusion
+The sample mean and variance of the distribution of 40 exponentials closely match the theoretical values. The distribution of the sample means is approximately normal, as expected from the Central Limit Theorem.
+
+## Apendix
+```{r  echo=FALSE}
+# Display the code used in the simulation
+lambda <- 0.2
+n <- 40
+num_simulations <- 1000
+set.seed(123)
+simulations <- replicate(num_simulations, rexp(n, lambda))
+sample_means <- colMeans(simulations)
+theoretical_mean <- 1 / lambda
+theoretical_variance <- (1 / lambda)^2 / n
+sample_mean <- mean(sample_means)
+sample_variance <- var(sample_means)
+hist(sample_means, probability = TRUE, 
+     main = "Distribution of Sample Means of 40 Exponentials",
+     xlab = "Sample Mean", 
+     col = "lightblue", 
+     border = "black")
+lines(density(sample_means), col = "red", lwd = 2)
+x <- seq(min(sample_means), max(sample_means), length.out = 100)
+y <- dnorm(x, mean = theoretical_mean, sd = sqrt(theoretical_variance))
+lines(x, y, col = "blue", lwd = 2, lty = 2)
+qqnorm(sample_means, main = "QQ-Plot of Sample Means")
+qqline(sample_means, col = "red")
+
+
+```
+
+
+

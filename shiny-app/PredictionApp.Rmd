@@ -1,0 +1,75 @@
+---
+title: "Simple Prediction App Pitch"
+author: "jameel"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+```
+
+
+
+## Slide 1: Title
+## Simple Prediction App
+
+## Slide 2: Introduction
+
+The Simple Prediction App takes a numeric input from the user and provides a prediction by multiplying the input value by 2.
+
+## Slide 3: Features
+
+- User input via text box
+- Simple prediction algorithm
+- Real-time output display
+
+## Slide 4: How to Use
+
+1. Enter a numeric value in the text box.
+2. Click 'Predict' button.
+3. View the predicted value displayed on the main panel.
+
+## Slide 5: Demo
+
+
+```{r Demo}
+shinyApp(
+  ui = fluidPage(
+    titlePanel("Advanced Prediction App"),
+    sidebarLayout(
+      sidebarPanel(
+        textInput("text", "Enter a value:", "50"),
+        radioButtons("operation", "Choose an operation:",
+                     choices = list("Multiply by 2" = "multiply", "Square the value" = "square")),
+        actionButton("predict", "Predict"),
+        br(),
+        p("Enter a numeric value in the text box, choose an operation, and click 'Predict' to see the result."),
+        p("This application can either multiply the entered value by 2 or square the value based on your choice.")
+      ),
+      mainPanel(
+        h3("Prediction Output:"),
+        verbatimTextOutput("prediction")
+      )
+    )
+  ),
+  server = function(input, output) {
+    observeEvent(input$predict, {
+      output$prediction <- renderText({
+        input_value <- as.numeric(input$text)
+        operation <- input$operation
+        prediction <- if (operation == "multiply") {
+          input_value * 2
+        } else {
+          input_value^2
+        }
+        paste("Predicted value:", prediction)
+      })
+    })
+  }
+)
+
+
+```
