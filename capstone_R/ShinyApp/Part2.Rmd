@@ -1,0 +1,253 @@
+---
+title: 'Part2: Predictive Model and Evaluation'
+author: "jameel"
+date: "2024-05-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(tm)
+```
+
+## Introduction
+
+This report outlines the process of building and evaluating a predictive model using n-grams and backoff techniques. The goal is to create an efficient and accurate model for text prediction.
+
+# Data Loading and Sampling
+
+```{r load-data}
+# Function to sample lines from a large file
+sample_file <- function(file_path, sample_fraction = 0.0001) {
+  con <- file(file_path, "r")
+  lines <- readLines(con, warn = FALSE)
+  close(con)
+  
+  sample_size <- ceiling(length(lines) * sample_fraction)
+  sampled_lines <- sample(lines, sample_size)
+  return(sampled_lines)
+}
+
+file_path <- "en_US.blogs.txt"  # Adjust this path as necessary
+sampled_lines <- sample_file(file_path, 0.001)  # Smaller sample size
+text_sample <- paste(sampled_lines, collapse = " ")
+
+
+
+```
+
+## Tokenization
+
+
+```{r tokenization}
+# Tokenization function using stringr
+tokenize <- function(text) {
+  tokens <- unlist(str_extract_all(text, boundary("word")))
+  return(tokens)
+}
+
+tokens <- tokenize(tolower(text_sample))
+
+
+
+
+```
+
+# Profanity Filtering
+```{r filtering}
+badwords_url <- "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/badwordslist/badwords.txt"
+download.file(badwords_url, destfile = "bad-words.txt")
+badwords <- readLines("bad-words.txt", encoding="UTF-8")
+
+# Function to remove profane words from tokens
+remove_profanity <- function(tokens, profane_words) {
+  clean_tokens <- tokens[!tokens %in% profane_words]
+  return(clean_tokens)
+}
+
+clean_tokens <- remove_profanity(tokens, badwords)
+
+
+```
+
+# Building N-Gram Models
+```{r n-gram-model}
+create_ngram <- function(tokens, n) {
+  ngrams <- unlist(lapply(seq_along(tokens), function(i) {
+    if (i <= length(tokens) - n + 1) {
+      paste(tokens[i:(i + n - 1)], collapse = " ")
+    }
+  }))
+  ngrams <- ngrams[!is.na(ngrams)]  # Remove NA values
+  ngram_table <- table(ngrams)
+  ngram_df <- as.data.frame(ngram_table)
+  colnames(ngram_df) <- c("ngram", "frequency")
+  ngram_df <- ngram_df[order(-ngram_df$frequency),]
+  return(ngram_df)
+}
+
+# Using smaller sample size for demonstration
+unigram_df <- create_ngram(clean_tokens, 1)
+bigram_df <- create_ngram(clean_tokens, 2)
+trigram_df <- create_ngram(clean_tokens, 3)
+
+
+
+```
+
+
+# Building the Backoff Model
+
+```{r backoff-model}
+predict_next_word <- function(input_text, unigram_df, bigram_df, trigram_df) {
+  input_tokens <- tokenize(tolower(input_text))
+  input_length <- length(input_tokens)
+  
+  if (input_length >= 2) {
+    last_bigram <- paste(input_tokens[(input_length-1):input_length], collapse = " ")
+    trigram_match <- trigram_df[grep(paste0("^", last_bigram, " "), trigram_df$ngram),]
+    if (nrow(trigram_match) > 0 && is.character(head(trigram_match$ngram, 1))) {
+      return(strsplit(head(trigram_match$ngram, 1), " ")[[1]][3])
+    }
+  }
+  
+  if (input_length >= 1) {
+    last_unigram <- input_tokens[input_length]
+    bigram_match <- bigram_df[grep(paste0("^", last_unigram, " "), bigram_df$ngram),]
+    if (nrow(bigram_match) > 0 && is.character(head(bigram_match$ngram, 1))) {
+      return(strsplit(head(bigram_match$ngram, 1), " ")[[1]][2])
+    }
+  }
+  
+  return(head(unigram_df$ngram, 1))
+}
+
+
+```
+
+# Evaluating Model
+
+```{r model}
+
+calculate_perplexity <- function(model, test_data) {
+  log_prob <- 0
+  total_words <- 0
+  for (sentence in test_data) {
+    tokens <- tokenize(tolower(sentence))
+    for (i in seq_along(tokens)) {
+      ngram <- paste(tokens[max(1, i-2):i], collapse = " ")
+      if (ngram %in% model$ngram) {
+        prob <- model$frequency[which(model$ngram == ngram)] / sum(model$frequency)
+      } else {
+        prob <- 1 / sum(model$frequency)
+      }
+      log_prob <- log_prob + log(prob)
+      total_words <- total_words + 1
+    }
+  }
+  perplexity <- exp(-log_prob / total_words)
+  return(perplexity)
+}
+
+# Example evaluation using a sample of the data as test data
+test_data <- sample_file(file_path, 0.0005)  # Smaller sample size
+perplexity <- calculate_perplexity(trigram_df, test_data)
+print(paste("Perplexity:", perplexity))
+
+
+
+```
+
+
+
+# Accuracy
+
+```{r accuracyl}
+
+evaluate_accuracy <- function(test_data, unigram_df, bigram_df, trigram_df) {
+  correct_predictions <- 0
+  total_predictions <- 0
+  
+  for (sentence in test_data) {
+    tokens <- tokenize(tolower(sentence))
+    for (i in seq_along(tokens)) {
+      if (i < length(tokens)) {
+        input_text <- paste(tokens[1:i], collapse = " ")
+        actual_next_word <- tokens[i + 1]
+        predicted_next_word <- predict_next_word(input_text, unigram_df, bigram_df, trigram_df)
+        if (predicted_next_word == actual_next_word) {
+          correct_predictions <- correct_predictions + 1
+        }
+        total_predictions <- total_predictions + 1
+      }
+    }
+  }
+  
+  accuracy <- correct_predictions / total_predictions
+  return(accuracy)
+}
+
+# Example evaluation using a sample of the data as test data
+accuracy <- evaluate_accuracy(test_data[1:100], unigram_df, bigram_df, trigram_df)  # Reduce number of test samples for accuracy evaluation
+print(paste("Accuracy:", accuracy))
+
+
+
+
+```
+
+
+# Timing the Model
+
+```{r timing}
+
+system.time({
+  for (sentence in test_data) {
+    predict_next_word(sentence, unigram_df, bigram_df, trigram_df)
+  }
+})
+
+
+```
+
+# Model Performance
+```{r model-performance}
+
+print(paste("Perplexity:", perplexity))
+
+
+```
+
+# Display Accuracy 
+```{r accuracy}
+
+print(paste("Accuracy:", accuracy))
+
+
+
+```
+
+
+# Timing
+
+```{r time}
+
+system.time({
+  for (sentence in test_data) {
+    predict_next_word(sentence, unigram_df, bigram_df, trigram_df)
+  }
+})
+
+
+
+
+```
+
+## Analysis 
+Model Performance: Evaluate the performance metrics.
+Parameter Tuning: How the model performs with different parameters.
+Trade-offs: Discuss the trade-offs between model size, complexity, and performance.
+Optimization: Strategies to optimize the model without compromising accuracy.
